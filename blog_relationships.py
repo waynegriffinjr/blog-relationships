@@ -27,10 +27,10 @@ class Author(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     
     # One-to-many: one author -> many posts
-    posts: Mapped[list["Post"]] = relationship(back_populates="author") # Provides a readable string representation for debugging and printing.
+    posts: Mapped[list["Post"]] = relationship(back_populates="author", cascade="all, delete-orphan") 
     
     def __repr__(self):
-        return f"Author(name='{self.name}')"
+        return f"Author(name='{self.name}')" # Provides a readable string representation for debugging and printing.
     
 
 class Post(Base):
@@ -113,7 +113,8 @@ with Session(engine) as session:
     session.commit()
     
     print("Data created!")
-    
+
+
     
 # Navigate one-to-many relationships. 
 with Session(engine) as session:
@@ -163,3 +164,26 @@ with Session(engine) as session:
     print("\n=== Updated Tags for 'Python for Data Science' ===")
     tag_names = [tag.name for tag in python_for_ds.tags]
     print(f"  Tags: {', '.join(tag_names)}")
+    
+    
+# Delete parent and child with cascade parameter.
+with Session(engine) as session:
+    
+    # Create an author with a post.
+    author = Author(name="Test Cascade")
+    post1 = Post(title="Test Post1", content="This is a test.", author=author)
+    
+    session.add(author)
+    session.commit()
+    
+    print("Author and posts created:")
+    print("Author ID:", author.id)
+    print("Post IDs:", [post.id for post in author.posts])
+    
+    # Delete the author and post.
+    session.delete(author)
+    session.commit()
+    
+    # Verify deletion.
+    remaining_posts = session.query(Post).filter(Post.author_id == author.id).all()
+    print("Remaining posts after deleting author: ", remaining_posts)
